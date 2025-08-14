@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CompuLite – Baza Policyjna LAPD</title>
+  <style>
+    :root{
+      --bg:#0e1116;--panel:#151a22;--panel-2:#0c1016;--text:#dbe4ef;--muted:#94a3b8;--accent:#60a5fa;--accent-2:#22d3ee;--danger:#ef4444;--ok:#34d399;--warn:#f59e0b;
+      --radius:14px;--shadow:0 10px 30px rgba(0,0,0,.35);--border:1px solid rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,rgba(32,70,128,.25),transparent),radial-gradient(1000px 500px at 10% 120%,rgba(20,160,170,.18),transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;letter-spacing:.2px}
+    .app{display:grid;grid-template-columns:300px 1fr;gap:14px;height:100vh;padding:16px}
+    .panel{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+    /* Sidebar */
+    .sidebar{padding:16px;display:flex;flex-direction:column;gap:14px}
+    .brand{font-size:22px;font-weight:800;letter-spacing:.5px}
+    .brand small{font-weight:600;color:var(--muted)}
+    .search{display:flex;gap:8px}
+    .search input{flex:1;background:#0c1220;border:var(--border);border-radius:12px;padding:12px 12px;color:var(--text);outline:none}
+    .search button{background:var(--accent);border:none;color:white;border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700}
+    .list{overflow:auto;min-height:0;border-top:var(--border);padding-top:10px}
+    .person{padding:10px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border:1px solid transparent}
+    .person:hover{background:#0f1420;border-color:rgba(255,255,255,.06)}
+    .person.active{background:#0f1626;border-color:rgba(255,255,255,.16)}
+    .tags{display:flex;gap:6px}
+    .tag{font-size:11px;padding:3px 6px;border-radius:999px;background:#0c1220;border:var(--border);color:var(--muted)}
+    .btn-secondary{background:#0c1220;border:var(--border);color:var(--text);border-radius:12px;padding:10px 12px;cursor:pointer}
+
+    /* Main */
+    .main{display:grid;grid-template-rows:auto 1fr;gap:14px;padding:16px}
+    .topbar{display:flex;align-items:center;justify-content:space-between}
+    .tabs{display:flex;gap:8px}
+    .tab{padding:10px 14px;border-radius:999px;background:#0c1220;border:var(--border);color:var(--muted);cursor:pointer;font-weight:600}
+    .tab.active{color:white;border-color:rgba(96,165,250,.45);box-shadow:inset 0 0 0 1px rgba(96,165,250,.35)}
+    .money{font-weight:800}
+
+    .content{display:grid;grid-template-columns:420px 1fr;gap:14px;min-height:0}
+    .card{background:rgba(255,255,255,.02);border:var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0}
+    .card h3{margin:0 0 2px 0;font-size:16px;letter-spacing:.3px}
+
+    .profile{display:grid;grid-template-columns:110px 1fr;gap:14px}
+    .avatar{width:110px;height:110px;border-radius:14px;background:linear-gradient(135deg,#0b1220,#0e1322);border:var(--border);display:grid;place-items:center;font-weight:800}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input,.field select,.field textarea{background:#0c1220;border:var(--border);border-radius:10px;color:var(--text);padding:10px;outline:none}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .row .btn{flex:1}
+    .btn{padding:10px 12px;border-radius:12px;border:none;cursor:pointer;font-weight:800}
+    .btn.accent{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#051122}
+    .btn.warn{background:var(--warn);color:#051122}
+    .btn.ok{background:var(--ok);color:#051122}
+    .btn.ghost{background:#0c1220;color:var(--text);border:var(--border)}
+
+    .lists{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;min-height:0}
+    .list-table{width:100%;border-collapse:collapse}
+    .list-table th,.list-table td{border-bottom:1px dashed rgba(255,255,255,.08);padding:8px 6px;text-align:left;font-size:13px}
+    .list-table th{color:var(--muted);font-weight:600}
+
+    .pill{padding:3px 8px;border-radius:999px;font-size:12px;border:var(--border);background:#0c1220;color:var(--muted)}
+
+    .footer{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+
+    /* Modal */
+    dialog{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:var(--border);border-radius:16px;color:var(--text);padding:0;box-shadow:var(--shadow);width:min(620px,96vw)}
+    dialog::backdrop{background:rgba(0,0,0,.6)}
+    .modal{padding:16px;display:flex;flex-direction:column;gap:12px}
+    .modal header{display:flex;justify-content:space-between;align-items:center}
+    .modal h4{margin:0}
+
+    @media (max-width: 1100px){
+      .content{grid-template-columns:1fr}
+      .lists{grid-template-columns:1fr}
+      .app{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar panel">
+      <div class="brand">CompuLite LAPD <small>Tablet System LAPD</small></div>
+      <div class="search">
+        <input id="search" placeholder="Szukaj osoby (Imię, Nazwisko, PESEL)" />
+        <button id="btn-new">Nowy</button>
+      </div>
+      <div class="list" id="people-list"></div>
+      <button class="btn-secondary" id="btn-export">Eksportuj bazę (JSON)</button>
+      <label class="btn-secondary" for="import-file" style="text-align:center;cursor:pointer">Importuj bazę (JSON)</label>
+      <input type="file" id="import-file" accept="application/json" hidden />
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main panel">
+      <div class="topbar">
+        <div class="tabs">
+          <div class="tab active" data-tab="ped">Dane obywatela</div>
+          <div class="tab" data-tab="vehicles">Pojazdy</div>
+          <div class="tab" data-tab="court">Sprawy sądowe</div>
+        </div>
+      </div>
+
+      <section class="content" id="tab-ped">
+        <div class="card">
+          <h3>Dane identyfikacyjne</h3>
+          <div class="profile">
+            <div class="avatar" id="avatar">ID</div>
+            <div class="grid">
+              <div class="field"><label>Imię</label><input id="firstName"></div>
+              <div class="field"><label>Nazwisko</label><input id="lastName"></div>
+              <div class="field"><label>Płeć</label>
+                <select id="sex"><option>Mężczyzna</option><option>Kobieta</option><option>Inna</option></select>
+              </div>
+              <div class="field"><label>Wiek</label><input id="age" type="number" min="0"></div>
+              <div class="field"><label>Data ur.</label><input id="dob" type="date"></div>
+              <div class="field"><label>Pochodzenie</label><input id="address"></div>
+              <div class="field"><label>Status prawa jazdy</label>
+                <select id="dlStatus"><option>Ważne</option><option>Zawieszone</option><option>Brak</option></select>
+              </div>
+              <div class="field"><label>Nakaz aresztowania</label>
+                <select id="warrant"><option>Brak</option><option>Aktywny</option></select>
+              </div>
+              <div class="field"><label>Ile razy zatrzymany</label><input id="stops" type="number" min="0"></div>
+              <div class="field"><label>Kategoria Prawajazdy</label>
+                <select id="probation"><option>B</option><option>B+E</option></option>C<option>C+E</option></option>T<option>D</option></select>
+              </div>
+              <div class="field"><label>Zwolnienie warunkowe</label>
+                <select id="parole"><option>Nie</option><option>Tak</option><option>Brak</option></select>
+              </div>
+              <div class="field"><label>Pozwolenie na broń</label>
+                <select id="gunPermit"><option>Nie</option><option>Tak</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn accent" id="btn-ticket">Wystaw mandat</button>
+            <button class="btn warn" id="btn-arrest">Utwórz raport aresztowania</button>
+            <button class="btn ghost" id="btn-save">Zapisz</button>
+          </div>
+          <div class="footer"><span>Autozapis po każdej zmianie</span><span id="status"></span></div>
+        </div>
+
+        <div class="lists">
+          <div class="card">
+            <h3>Mandaty</h3>
+            <table class="list-table" id="tbl-tickets">
+              <thead><tr><th>Data</th><th>Wykroczenie</th><th>Kwota</th><th>Termin Zapłaty</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h3>Aresztowania</h3>
+            <table class="list-table" id="tbl-arrests">
+              <thead><tr><th>Data</th><th>Wykroczenie</th><th>Opis</th><th>Status</th><th>Wyrok</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="content" id="tab-vehicles" style="display:none">
+        <div class="card">
+          <h3>Pojazdy obywatela</h3>
+          <table class="list-table" id="tbl-vehicles">
+            <thead><tr><th>Imię Nazwisko Właściciela</th><th>Rejestracja</th><th>Marka/Model</th><th>Ubezp.</th><th>Kolor</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="row"><button class="btn accent" id="btn-vehicle">Dodaj pojazd</button></div>
+        </div>
+      </section>
+
+      <section class="content" id="tab-court" style="display:none">
+        <div class="card">
+          <h3>Sprawy sądowe</h3>
+          <table class="list-table" id="tbl-cases">
+            <thead><tr><th>Wykroczenia</th><th>Opis</th><th>Wyrok</th><th>Data</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="row"><button class="btn accent" id="btn-case">Dodaj sprawę / wyrok</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <dialog id="modal-ticket">
+    <form method="dialog" class="modal" id="form-ticket">
+      <header><h4>Nowy mandat</h4><button class="btn ghost" value="cancel">Zamknij</button></header>
+      <div class="grid">
+        <div class="field"><label>Data</label><input name="date" type="date" required></div>
+        <div class="field"><label>Wykroczenie</label><input name="offense" required></div>
+        <div class="field"><label>Kwota</label><input name="points" type="number" min="0" value="0"></div>
+        <div class="field"><label>Termin zapłaty</label><input name="amount"></div>
+      </div>
+      <div class="row"><button class="btn ok" value="default">Zapisz mandat</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="modal-arrest">
+    <form method="dialog" class="modal" id="form-arrest">
+      <header><h4>Nowe aresztowanie</h4><button class="btn ghost" value="cancel">Zamknij</button></header>
+      <div class="grid">
+        <div class="field"><label>Data</label><input name="date" type="date" required></div>
+        <div class="field"><label>Wykroczenie</label><input name="code" required></div>
+        <div class="field" style="grid-column:1/-1"><label>Opis</label><textarea name="desc" rows="3"></textarea></div>
+        <div class="field"><label>Status</label>
+          <select name="status"><option>W toku</option><option>Ustalono winę</option><option>Umorzone</option></select>
+        <div class="field"><label>Wyrok</label><input name="code" required></div>
+        </div>
+      </div>
+      <div class="row"><button class="btn ok" value="default">Zapisz aresztowanie</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="modal-vehicle">
+    <form method="dialog" class="modal" id="form-vehicle">
+      <header><h4>Dodaj pojazd</h4><button class="btn ghost" value="cancel">Zamknij</button></header>
+      <div class="grid">
+        <div class="field"><label>Imie Nazwisko Właściciela</label><input name="imię nazwisko wlasciciela"></div>
+        <div class="field"><label>Rejestracja</label><input name="plate" required></div>
+        <div class="field"><label>Marka/Model</label><input name="model" required></div>
+        <div class="field"><label>Ubezpieczenie</label>
+          <select name="ins"><option>Ważne</option><option>Brak</option></select>
+          <div class="field"><label>Kolor</label> <input name="color" required></div>
+        </div>
+      </div>
+      <div class="row"><button class="btn ok" value="default">Zapisz pojazd</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="modal-case">
+    <form method="dialog" class="modal" id="form-case">
+      <header><h4>Nowa sprawa / wyrok</h4><button class="btn ghost" value="cancel">Zamknij</button></header>
+      <div class="grid">
+        <div class="field"><label>Wykroczenia</label><input name="id" required></div>
+        <div class="field"><label>Data</label><input name="date" type="date" required></div>
+        <div class="field" style="grid-column:1/-1"><label>Opis</label><textarea name="desc" rows="3"></textarea></div>
+        <div class="field" style="grid-column:1/-1"><label>Wyrok</label><input name="verdict" placeholder="np. 6 mies./ grzywna 2000 $"></div>
+      </div>
+      <div class="row"><button class="btn ok" value="default">Zapisz sprawę</button></div>
+    </form>
+  </dialog>
+
+  <script>
+  // ---- Mini store w localStorage ----
+  const LS_KEY = 'compulite_pl_db_v1';
+  const $ = (q,root=document)=>root.querySelector(q);
+  const $$ = (q,root=document)=>[...root.querySelectorAll(q)];
+
+  let db = loadDB();
+  let currentId = db.people[0]?.id || null;
+
+  function uid(){return Math.random().toString(36).slice(2,9)}
+  function loadDB(){
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){try{return JSON.parse(raw)}catch{}}
+    // seed demo
+    const jack = {
+      id: uid(), firstName:'Jack', lastName:'Edwards', sex:'Mężczyzna', age:19, dob:'2002-06-26', address:'659 Pln. Rockford Dr',
+      dlStatus:'Ważne', warrant:'Brak', stops:5, probation:'Nie', parole:'Nie', gunPermit:'Nie',
+      tickets:[{date:'2021-02-02', offense:'Prowadzenie przy zawieszonych uprawnieniach', points:8, amount:1500}],
+      arrests:[],
+      vehicles:[{plate:'4SPA123', model:'Vapid Scout', color:'Czarny', ins:'Ważne'}],
+      cases:[{id:'III K 25/21', desc:'Nieuzasadnione niezatrzymanie się do kontroli', verdict:'Grzywna 2500 PLN', date:'2021-09-25'}]
+    };
+    return {people:[jack]};
+  }
+  function saveDB(){localStorage.setItem(LS_KEY, JSON.stringify(db));setStatus('Zapisano')}
+  function setStatus(t){const s=$('#status');s.textContent=t;setTimeout(()=>s.textContent='',1200)}
+
+  // ---- UI Render ----
+  function renderPeople(filter=''){
+    const wrap = $('#people-list');
+    wrap.innerHTML='';
+    const list = db.people.filter(p => (p.firstName+p.lastName).toLowerCase().includes(filter.toLowerCase()));
+    list.forEach(p=>{
+      const el=document.createElement('div');el.className='person'+(p.id===currentId?' active':'');
+      el.innerHTML=`<div><div style="font-weight:700">${p.firstName} ${p.lastName}</div><div class="tags"><span class="tag">${p.sex}</span><span class="tag">${p.age} lat</span></div></div><div class="pill">${p.tickets.length} M</div>`;
+      el.onclick=()=>{currentId=p.id;renderAll()}
+      wrap.appendChild(el);
+    })
+  }
+
+  function current(){return db.people.find(p=>p.id===currentId)}
+
+  function bindProfile(){
+    const p = current(); if(!p) return;
+    $('#avatar').textContent = p.firstName?.[0]?.toUpperCase()+ (p.lastName?.[0]?.toUpperCase()||'');
+    $('#firstName').value=p.firstName||'';
+    $('#lastName').value=p.lastName||'';
+    $('#sex').value=p.sex||'Mężczyzna';
+    $('#age').value=p.age||0;
+    $('#dob').value=p.dob||'';
+    $('#address').value=p.address||'';
+    $('#dlStatus').value=p.dlStatus||'Ważne';
+    $('#warrant').value=p.warrant||'Brak';
+    $('#stops').value=p.stops||0;
+    $('#probation').value=p.probation||'Nie';
+    $('#parole').value=p.parole||'Nie';
+    $('#gunPermit').value=p.gunPermit||'Nie';
+  }
+
+  function renderTable(tbody, rows, map){
+    tbody.innerHTML='';
+    rows.forEach((row,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = map(row) + `<td><button class="btn ghost" data-i="${i}">Usuń</button></td>`;
+      tbody.appendChild(tr);
+    })
+  }
+
+  function bindLists(){
+    const p=current(); if(!p) return;
+    renderTable($('#tbl-tickets tbody'), p.tickets, r=>`<td>${r.date||''}</td><td>${r.offense||''}</td><td>${r.points||0}</td><td>${r.amount||0}</td>`);
+    renderTable($('#tbl-arrests tbody'), p.arrests, r=>`<td>${r.date||''}</td><td>${r.code||''}</td><td>${r.desc||''}</td><td>${r.status||''}</td>`);
+    renderTable($('#tbl-vehicles tbody'), p.vehicles, r=>`<td>${r.plate}</td><td>${r.model}</td><td>${r.color}</td><td>${r.ins}</td>`);
+    renderTable($('#tbl-cases tbody'), p.cases, r=>`<td>${r.id}</td><td>${r.desc||''}</td><td>${r.verdict||''}</td><td>${r.date||''}</td>`);
+
+    // delete handlers (event delegation)
+    ['tbl-tickets','tbl-arrests','tbl-vehicles','tbl-cases'].forEach((id)=>{
+      const tbl = document.getElementById(id);
+      tbl.onclick = (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const idx = +btn.dataset.i; if(Number.isNaN(idx)) return;
+        const p=current();
+        const map = { 'tbl-tickets':'tickets', 'tbl-arrests':'arrests', 'tbl-vehicles':'vehicles', 'tbl-cases':'cases' };
+        p[ map[id] ].splice(idx,1); saveDB(); bindLists(); renderPeople($('#search').value);
+      }
+    })
+  }
+
+  function renderAll(){ renderPeople($('#search').value); bindProfile(); bindLists(); }
+
+  // ---- events ----
+  $('#search').addEventListener('input', e=>renderPeople(e.target.value));
+
+  // profile change autosave
+  $$('#tab-ped input, #tab-ped select').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const p=current(); if(!p) return;
+      Object.assign(p,{
+        firstName:$('#firstName').value,lastName:$('#lastName').value,sex:$('#sex').value,age:+$('#age').value,
+        dob:$('#dob').value,address:$('#address').value,dlStatus:$('#dlStatus').value,warrant:$('#warrant').value,
+        stops:+$('#stops').value,probation:$('#probation').value,parole:$('#parole').value,gunPermit:$('#gunPermit').value,
+      }); saveDB(); renderPeople($('#search').value);
+    })
+  })
+
+  $('#btn-save').onclick = saveDB;
+
+  // tabs
+  $$('.tab').forEach(t=>t.onclick=()=>{
+    $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+    ['ped','vehicles','court'].forEach(name=>$('#tab-'+name).style.display='none');
+    $('#tab-'+t.dataset.tab).style.display='grid';
+  })
+
+  // new person
+  $('#btn-new').onclick=()=>{
+    const p={id:uid(), firstName:'Nowy', lastName:'Obywatel', sex:'Mężczyzna', age:0, dob:'', address:'', dlStatus:'Ważne', warrant:'Brak', stops:0, probation:'Nie', parole:'Nie', gunPermit:'Nie', tickets:[], arrests:[], vehicles:[], cases:[]};
+    db.people.unshift(p); currentId=p.id; saveDB(); renderAll();
+  }
+
+  // Export/Import
+  $('#btn-export').onclick=()=>{
+    const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='baza_policyjna.json'; a.click(); URL.revokeObjectURL(url);
+  }
+  $('#import-file').onchange=(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const fr=new FileReader(); fr.onload=()=>{ try{ db=JSON.parse(fr.result); currentId = db.people[0]?.id || null; saveDB(); renderAll(); }catch{ alert('Nieprawidłowy plik JSON'); } };
+    fr.readAsText(file);
+  }
+
+  // modals open
+  const open = (id)=>document.getElementById(id).showModal();
+  $('#btn-ticket').onclick=()=>open('modal-ticket');
+  $('#btn-arrest').onclick=()=>open('modal-arrest');
+  $('#btn-vehicle').onclick=()=>open('modal-vehicle');
+  $('#btn-case').onclick=()=>open('modal-case');
+
+  // forms save
+  $('#form-ticket').addEventListener('close',()=>{});
+  $('#form-ticket').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    current().tickets.push({date:f.get('date'), offense:f.get('offense'), points:+f.get('points'), amount:+f.get('amount')});
+    saveDB(); bindLists(); renderPeople($('#search').value);
+  })
+  $('#form-arrest').addEventListener('submit', (e)=>{
+    e.preventDefault(); const f=new FormData(e.target);
+    current().arrests.push({date:f.get('date'), code:f.get('code'), desc:f.get('desc'), status:f.get('status')});
+    saveDB(); bindLists();
+  })
+  $('#form-vehicle').addEventListener('submit', (e)=>{
+    e.preventDefault(); const f=new FormData(e.target);
+    current().vehicles.push({plate:f.get('plate'), model:f.get('model'), color:f.get('color'), ins:f.get('ins')});
+    saveDB(); bindLists();
+  })
+  $('#form-case').addEventListener('submit', (e)=>{
+    e.preventDefault(); const f=new FormData(e.target);
+    current().cases.push({id:f.get('id'), desc:f.get('desc'), verdict:f.get('verdict'), date:f.get('date')});
+    saveDB(); bindLists();
+  })
+
+  // initial
+  renderAll();
+  </script>
+</body>
+</html>
